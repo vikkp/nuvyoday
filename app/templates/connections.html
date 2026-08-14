@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Connections — Nuvyoday{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="mb-0"><i class="bi bi-hdd-network"></i> IBM i Connections</h2>
+  <a href="{{ url_for('main.connection_new') }}" class="btn btn-primary">
+    <i class="bi bi-plus-lg"></i> Add Connection
+  </a>
+</div>
+
+{% if not connections %}
+<div class="alert alert-info">
+  No connections yet. <a href="{{ url_for('main.connection_new') }}">Add your first IBM i system</a>.
+</div>
+{% else %}
+<div class="table-responsive shadow-sm rounded">
+  <table class="table table-hover align-middle mb-0 bg-white">
+    <thead class="table-light">
+      <tr>
+        <th>Name</th>
+        <th>Host</th>
+        <th>User</th>
+        <th>Last Test</th>
+        <th class="text-end">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in connections %}
+      <tr>
+        <td>
+          <strong>{{ c.name }}</strong>
+          {% if c.notes %}
+            <br><small class="text-muted">{{ c.notes[:60] }}{% if c.notes|length > 60 %}…{% endif %}</small>
+          {% endif %}
+        </td>
+        <td>
+          {{ c.host }}{% if c.port != 8473 %}:{{ c.port }}{% endif %}
+          {% if c.use_ssl %}<span class="badge bg-info text-dark ms-1">SSL</span>{% endif %}
+        </td>
+        <td>{{ c.username }}</td>
+        <td>
+          {% if c.last_tested_at %}
+            <small class="text-muted">{{ c.last_tested_at.strftime('%Y-%m-%d %H:%M') }} UTC</small><br>
+            {% if c.last_test_success %}
+              <span class="badge bg-success">OK</span>
+            {% else %}
+              <span class="badge bg-danger">Failed</span>
+            {% endif %}
+            {% if c.last_test_message %}
+              <br><small class="text-muted" title="{{ c.last_test_message }}">{{ c.last_test_message[:50] }}{% if c.last_test_message|length > 50 %}…{% endif %}</small>
+            {% endif %}
+          {% else %}
+            <span class="text-muted">Never</span>
+          {% endif %}
+        </td>
+        <td class="text-end text-nowrap">
+          <form action="{{ url_for('main.connection_test', conn_id=c.id) }}" method="post" class="d-inline">
+            <button type="submit" class="btn btn-sm btn-outline-success" title="Test connection">
+              <i class="bi bi-play-circle"></i> Test
+            </button>
+          </form>
+          <a href="{{ url_for('main.connection_edit', conn_id=c.id) }}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-pencil"></i>
+          </a>
+          <form action="{{ url_for('main.connection_delete', conn_id=c.id) }}" method="post" class="d-inline"
+                onsubmit="return confirm('Delete connection “{{ c.name }}”?');">
+            <button type="submit" class="btn btn-sm btn-outline-danger">
+              <i class="bi bi-trash"></i>
+            </button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<div class="mt-4 p-3 bg-white rounded shadow-sm border">
+  <h6 class="text-muted mb-2"><i class="bi bi-info-circle"></i> Notes</h6>
+  <ul class="small text-muted mb-0">
+    <li>Passwords are encrypted at rest using Fernet (key derived from your FLASK_SECRET_KEY).</li>
+    <li>You need Java 8+ and <code>jt400.jar</code> (or JTOpen) in the <code>lib/</code> folder for the Test button to work.</li>
+    <li>Default non-SSL host server port is 8473. SSL usually uses 9473 or depends on your system configuration.</li>
+  </ul>
+</div>
+{% endblock %}
