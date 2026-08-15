@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Dependencies — {{ member.member }} — Nuvyoday{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('main.inventory', conn_id=connection.id) }}">Inventory</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('main.inventory_library', conn_id=connection.id, library=library) }}">{{ library }}</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('main.inventory_members', conn_id=connection.id, library=library, source_file=source_file) }}">{{ source_file }}</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('main.view_member_source', conn_id=connection.id, library=library, source_file=source_file, member=member.member) }}">{{ member.member }}</a></li>
+    <li class="breadcrumb-item active">Dependencies</li>
+  </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+  <div>
+    <h2 class="mb-1">Dependencies</h2>
+    <p class="text-muted mb-0">
+      {{ library }}/{{ source_file }}({{ member.member }})
+      {% if member.source_type %} · <code>{{ member.source_type }}</code>{% endif %}
+    </p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('main.view_member_source', conn_id=connection.id, library=library, source_file=source_file, member=member.member) }}"
+       class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-code-slash"></i> Source
+    </a>
+    <form action="{{ url_for('main.analyze_member_route', conn_id=connection.id, library=library, source_file=source_file, member=member.member) }}"
+          method="post">
+      <button type="submit" class="btn btn-primary btn-sm" {% if not member.is_harvested %}disabled{% endif %}>
+        <i class="bi bi-diagram-3"></i> Re-analyze
+      </button>
+    </form>
+  </div>
+</div>
+
+{% if last_run %}
+<p class="small text-muted">
+  Last run #{{ last_run.id }} · {{ last_run.status }}
+  {% if last_run.finished_at %} · {{ last_run.finished_at.strftime('%Y-%m-%d %H:%M UTC') }}{% endif %}
+</p>
+{% endif %}
+
+{% if not edges %}
+<div class="alert alert-secondary">
+  No dependencies stored yet.
+  {% if member.is_harvested %}
+  Run <strong>Re-analyze</strong> to extract CL calls and related references (ADR0003 MVP).
+  {% else %}
+  Harvest the member first.
+  {% endif %}
+</div>
+{% else %}
+<div class="table-responsive shadow-sm rounded">
+  <table class="table table-hover align-middle mb-0 bg-white">
+    <thead class="table-light">
+      <tr>
+        <th>Type</th>
+        <th>Target</th>
+        <th>Object</th>
+        <th>Resolved</th>
+        <th>Evidence</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in edges %}
+      <tr>
+        <td><code>{{ e.edge_type }}</code></td>
+        <td>
+          <strong>{{ e.to_node.display_name() }}</strong>
+        </td>
+        <td><span class="badge bg-secondary">{{ e.to_node.object_type }}</span></td>
+        <td>
+          {% if e.resolved %}
+            <span class="badge bg-success">Yes</span>
+          {% else %}
+            <span class="badge bg-warning text-dark">No</span>
+          {% endif %}
+        </td>
+        <td class="small">
+          {% if e.evidence_line_no %}<span class="text-muted">L{{ e.evidence_line_no }}</span>{% endif %}
+          <code class="d-block text-break">{{ e.evidence_text }}</code>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="small text-muted mt-2">{{ edges|length }} edge(s) · CL heuristic extractor (ADR0003)</p>
+{% endif %}
+{% endblock %}
