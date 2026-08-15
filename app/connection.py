@@ -273,33 +273,81 @@ class IBMiConnection:
 
     def get_member_source(self, library: str, source_file: str, member: str) -> str:
         """
-        Retrieve the source text of a single member.
-        Returns the source as a single string (lines joined by newlines).
+        Retrieve source text of a single member.
+
+        Prefers classic source PF layout: SRCSEQ / SRCDAT / SRCDTA.
+        Falls back to full record text if SRCDTA is not present.
         """
         self.connect()
         try:
-            from com.ibm.as400.access import SequentialFile, QSYSObjectPathName  # type: ignore
+            from com.ibm.as400.access import (  # type: ignore
+                SequentialFile,
+                QSYSObjectPathName,
+                AS400FileRecordDescription,
+            )
 
             library = library.strip().upper()
             source_file = source_file.strip().upper()
             member = member.strip().upper()
 
             path = QSYSObjectPathName(library, source_file, member, "MBR")
-            sf = SequentialFile(self._system, path.getPath())
+            ifs_path = path.getPath()
+
+            sf = SequentialFile(self._system, ifs_path)
+
+            try:
+                desc = AS400FileRecordDescription(self._system, ifs_path)
+                formats = desc.retrieve()
+                if formats and len(formats) > 0:
+                    sf.setRecordFormat(formats[0])
+            except Exception:
+                pass
+
             sf.setReadNoWrite()
             sf.open()
             try:
-                lines = []
+                lines: list[str] = []
                 record = sf.readNext()
                 while record is not None:
-                    text = str(record).rstrip()
-                    lines.append(text)
+                    line = self._extract_source_line(record)
+                    lines.append(line)
                     record = sf.readNext()
                 return "\n".join(lines)
             finally:
                 sf.close()
         finally:
             self.disconnect()
+
+    @staticmethod
+    def _extract_source_line(record) -> str:
+        """
+        Pull one source line from a JT400 Record.
+
+        Classic source physical files use SRCDTA for the source text.
+        If that field is missing, fall back to the full record string and
+        strip leading sequence/date noise when possible.
+        """
+        for candidate in ("SRCDTA", "SRC_DTA", "SOURCE"):
+            try:
+                value = record.getField(candidate)
+                if value is not None:
+                    return str(value).rstrip()
+            except Exception:
+                pass
+
+        try:
+            fields = list(record)
+            if len(fields) >= 3:
+                return str(fields[-1]).rstrip()
+            if len(fields) == 1:
+                return str(fields[0]).rstrip()
+        except Exception:
+            pass
+
+        raw = str(record).rstrip()
+        if len(raw) > 12 and raw[:12].replace(" ", "").isdigit():
+            return raw[12:].rstrip()
+        return raw
 
     def __enter__(self):
         self.connect()
