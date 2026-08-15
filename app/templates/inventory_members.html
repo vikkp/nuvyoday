@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}{{ source_file }} — {{ library }} — Nuvyoday{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('main.inventory', conn_id=connection.id) }}">Inventory</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('main.inventory_library', conn_id=connection.id, library=library) }}">{{ library }}</a></li>
+    <li class="breadcrumb-item active">{{ source_file }}</li>
+  </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="mb-1">{{ library }} / {{ source_file }}</h2>
+    <p class="text-muted mb-0">Members</p>
+  </div>
+  <form action="{{ url_for('main.inventory_members_discover', conn_id=connection.id, library=library, source_file=source_file) }}" method="post">
+    <button type="submit" class="btn btn-primary">
+      <i class="bi bi-arrow-repeat"></i> Discover Members
+    </button>
+  </form>
+</div>
+
+{% if not members %}
+<div class="alert alert-secondary">
+  No members discovered yet. Click the button above to list members in this source file.
+</div>
+{% else %}
+<div class="table-responsive shadow-sm rounded">
+  <table class="table table-hover align-middle mb-0 bg-white">
+    <thead class="table-light">
+      <tr>
+        <th>Member</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Harvested</th>
+        <th class="text-end">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in members %}
+      <tr>
+        <td><strong>{{ m.member }}</strong></td>
+        <td><code>{{ m.source_type or '—' }}</code></td>
+        <td class="text-muted small">{{ m.text_description or '—' }}</td>
+        <td>
+          {% if m.is_harvested %}
+            <span class="badge bg-success">Yes</span>
+            <small class="text-muted d-block">{{ m.fetched_at.strftime('%Y-%m-%d %H:%M') if m.fetched_at else '' }}</small>
+          {% else %}
+            <span class="badge bg-secondary">No</span>
+          {% endif %}
+        </td>
+        <td class="text-end">
+          <form action="{{ url_for('main.harvest_member', conn_id=connection.id, library=library, source_file=source_file, member=m.member) }}"
+                method="post" class="d-inline">
+            <button type="submit" class="btn btn-sm btn-outline-primary"
+                    {% if m.is_harvested %}title="Re-harvest"{% endif %}>
+              <i class="bi bi-download"></i> {% if m.is_harvested %}Re-harvest{% else %}Harvest{% endif %}
+            </button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}
