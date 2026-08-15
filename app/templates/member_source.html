@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}{{ member.member }} — {{ library }}/{{ source_file }} — Nuvyoday{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('main.inventory', conn_id=connection.id) }}">Inventory</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('main.inventory_library', conn_id=connection.id, library=library) }}">{{ library }}</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('main.inventory_members', conn_id=connection.id, library=library, source_file=source_file) }}">{{ source_file }}</a></li>
+    <li class="breadcrumb-item active">{{ member.member }}</li>
+  </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+  <div>
+    <h2 class="mb-1">{{ library }}/{{ source_file }}({{ member.member }})</h2>
+    <p class="text-muted mb-0">
+      {% if member.source_type %}<code>{{ member.source_type }}</code>{% endif %}
+      {% if member.text_description %} · {{ member.text_description }}{% endif %}
+    </p>
+  </div>
+  <div class="text-end">
+    {% if member.is_harvested %}
+      <span class="badge bg-success">Harvested</span>
+      <div class="small text-muted mt-1">
+        {{ member.fetched_at.strftime('%Y-%m-%d %H:%M UTC') if member.fetched_at else '' }}
+        {% if member.content_hash %}<br><code class="small">{{ member.content_hash[:12] }}…</code>{% endif %}
+      </div>
+    {% else %}
+      <span class="badge bg-secondary">Not harvested</span>
+    {% endif %}
+  </div>
+</div>
+
+{% if not member.is_harvested %}
+<div class="alert alert-warning">
+  Source has not been harvested yet.
+  <form action="{{ url_for('main.harvest_member', conn_id=connection.id, library=library, source_file=source_file, member=member.member) }}"
+        method="post" class="d-inline">
+    <button type="submit" class="btn btn-sm btn-primary ms-2">
+      <i class="bi bi-download"></i> Harvest now
+    </button>
+  </form>
+</div>
+{% else %}
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-white d-flex justify-content-between align-items-center">
+    <span class="small text-muted">{{ member.source_content|length }} characters</span>
+    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="navigator.clipboard.writeText(document.getElementById('src').innerText)">
+      <i class="bi bi-clipboard"></i> Copy
+    </button>
+  </div>
+  <div class="card-body p-0">
+    <pre id="src" class="mb-0 p-3" style="max-height: 70vh; overflow: auto; font-size: 0.85rem; background: #1e1e1e; color: #d4d4d4; border-radius: 0 0 .375rem .375rem;"><code>{{ member.source_content }}</code></pre>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

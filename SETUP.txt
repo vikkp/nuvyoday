@@ -1,0 +1,23 @@
+Nuvyoday — Quick Setup
+======================
+
+1. Install Python 3.11+ and Java 8+
+2. Create a virtual environment:
+     python -m venv .venv
+     source .venv/bin/activate          # Windows: .venv\Scripts\activate
+3. Install dependencies:
+     pip install -r requirements.txt
+4. Copy environment file:
+     cp .env.example .env
+     # Edit .env and set a strong FLASK_SECRET_KEY
+5. Download JT400 and place it in lib/:
+     # Example (Mac/Linux):
+     curl -L -o lib/jt400.jar \
+       "https://repo1.maven.org/maven2/net.sf.jt400/jt400/21.0.7/jt400-21.0.7.jar"
+     # Windows: download the jar from Maven Central and save as lib\jt400.jar
+6. Run:
+     python run.py
+7. Open: http://127.0.0.1:5055
+
+This tool must run on a machine that can reach your IBM i system
+(same network / VPN). It is designed for on-premises use via iVistaar.
