@@ -6,6 +6,15 @@ Nuvyoday helps you extract, understand, and document the business logic locked i
 
 It connects to your IBM i system, inventories source members (QCLSRC, QRPGSRC, etc.), builds mapping diagrams, and generates clean technical + functional specifications — eliminating the knowledge silos that stall migration projects.
 
+## Deployment Model
+
+| Mode | Purpose | Where it runs |
+|------|---------|---------------|
+| **Real product** | Full functionality + JT400 connection to IBM i | Customer premises via **iVistaar** on IIS (or local `python run.py`) |
+| **Public UI Demo** | Show the look & feel only | Static site (Cloudflare Pages / any static host) – see `/demo` folder |
+
+The real product is designed to run **inside the customer network** so it can reach internal IBM i systems securely. It is **not** meant to be a multi-tenant SaaS on the public internet.
+
 ## Features (Starter)
 
 - Local Flask web application (runs on your machine)
@@ -62,6 +71,7 @@ nuvyoday/
 │   ├── routes.py            # Web routes
 │   ├── templates/
 │   └── static/
+├── demo/                   # Static UI for Cloudflare / public preview
 ├── data/                    # SQLite DB + future source storage
 ├── lib/                     # Place jt400.jar here
 ├── run.py
@@ -85,6 +95,19 @@ nuvyoday/
 - The encryption key is derived from `FLASK_SECRET_KEY`. Keep that secret.
 - Never commit `.env` or the SQLite database.
 - This tool is intended to run locally or in a controlled internal environment.
+
+## Public UI Demo (Cloudflare / static)
+
+A pure static version of the UI lives in the `/demo` folder. It uses the same colors and layout as the real app, with sample data and non-functional buttons.
+
+**To deploy the demo on Cloudflare Pages:**
+
+1. Create a new Pages project connected to this repo
+2. Set **Build output directory** to `demo`
+3. Leave Build command empty (or `echo "static demo"`)
+4. Deploy
+
+No Python, no Java, no JT400 — just HTML/CSS so anyone can see the product look-and-feel.
 
 ## License
 
