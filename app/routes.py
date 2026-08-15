@@ -388,3 +388,65 @@ def view_member_source(conn_id, library, source_file, member):
         source_file=source_file,
         member=mbr,
     )
+
+
+@bp.route("/inventory/<int:conn_id>/library/<library>/<source_file>/harvest-bulk", methods=["POST"])
+def bulk_harvest(conn_id, library, source_file):
+    """Harvest one or more selected members in a single request."""
+    conn = Connection.query.get_or_404(conn_id)
+    library = library.upper()
+    source_file = source_file.upper()
+    selected = request.form.getlist("members")
+
+    if not selected:
+        flash("Select at least one member to harvest.", "warning")
+        return redirect(url_for(
+            "main.inventory_members",
+            conn_id=conn.id, library=library, source_file=source_file
+        ))
+
+    selected = [m.strip().upper() for m in selected if m.strip()][:50]
+
+    try:
+        live = _get_live_connection(conn)
+    except Exception as e:
+        flash(f"Could not open IBM i connection: {e}", "danger")
+        return redirect(url_for(
+            "main.inventory_members",
+            conn_id=conn.id, library=library, source_file=source_file
+        ))
+
+    ok = 0
+    errors = []
+    for member_name in selected:
+        mbr = SourceMember.query.filter_by(
+            connection_id=conn.id,
+            library=library,
+            source_file=source_file,
+            member=member_name,
+        ).first()
+        if not mbr:
+            errors.append(f"{member_name}: not in inventory")
+            continue
+        try:
+            content = live.get_member_source(library, source_file, member_name)
+            mbr.source_content = content
+            mbr.content_hash = hashlib.sha256(
+                content.encode("utf-8", errors="replace")
+            ).hexdigest()
+            mbr.fetched_at = datetime.now(timezone.utc)
+            ok += 1
+        except Exception as e:
+            errors.append(f"{member_name}: {e}")
+
+    db.session.commit()
+
+    if ok:
+        flash(f"Harvested {ok} member(s).", "success")
+    if errors:
+        flash("Some members failed: " + "; ".join(errors[:5]), "warning")
+
+    return redirect(url_for(
+        "main.inventory_members",
+        conn_id=conn.id, library=library, source_file=source_file
+    ))
