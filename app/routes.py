@@ -450,3 +450,93 @@ def bulk_harvest(conn_id, library, source_file):
         "main.inventory_members",
         conn_id=conn.id, library=library, source_file=source_file
     ))
+
+
+# ---------------------------------------------------------------------------
+# Dependency analysis (ADR0003)
+# ---------------------------------------------------------------------------
+
+from .analysis import analyze_member as run_analyze_member
+from .models import DependencyEdge, AnalysisRun
+
+
+@bp.route(
+    "/inventory/<int:conn_id>/library/<library>/<source_file>/<member>/analyze",
+    methods=["POST"],
+)
+def analyze_member_route(conn_id, library, source_file, member):
+    """Run CL (MVP) dependency extraction on a harvested member."""
+    conn = Connection.query.get_or_404(conn_id)
+    library = library.upper()
+    source_file = source_file.upper()
+    member = member.upper()
+
+    mbr = SourceMember.query.filter_by(
+        connection_id=conn.id,
+        library=library,
+        source_file=source_file,
+        member=member,
+    ).first_or_404()
+
+    if not mbr.is_harvested:
+        flash("Harvest the member before analyzing.", "warning")
+        return redirect(url_for(
+            "main.view_member_source",
+            conn_id=conn.id, library=library, source_file=source_file, member=member
+        ))
+
+    try:
+        run = run_analyze_member(mbr)
+        flash(f"Analysis complete \u2014 run #{run.id}.", "success")
+    except Exception as e:
+        flash(f"Analysis failed: {e}", "danger")
+
+    return redirect(url_for(
+        "main.member_dependencies",
+        conn_id=conn.id, library=library, source_file=source_file, member=member
+    ))
+
+
+@bp.route("/inventory/<int:conn_id>/library/<library>/<source_file>/<member>/dependencies")
+def member_dependencies(conn_id, library, source_file, member):
+    """Show outbound dependencies for a member."""
+    conn = Connection.query.get_or_404(conn_id)
+    library = library.upper()
+    source_file = source_file.upper()
+    member = member.upper()
+
+    mbr = SourceMember.query.filter_by(
+        connection_id=conn.id,
+        library=library,
+        source_file=source_file,
+        member=member,
+    ).first_or_404()
+
+    edges = (
+        DependencyEdge.query
+        .filter_by(connection_id=conn.id, source_member_id=mbr.id)
+        .order_by(DependencyEdge.edge_type, DependencyEdge.id)
+        .all()
+    )
+    last_run = (
+        AnalysisRun.query
+        .filter_by(
+            connection_id=conn.id,
+            scope_type="member",
+            library=library,
+            source_file=source_file,
+            member=member,
+        )
+        .order_by(AnalysisRun.id.desc())
+        .first()
+    )
+
+    return render_template(
+        "member_dependencies.html",
+        connection=conn,
+        library=library,
+        source_file=source_file,
+        member=mbr,
+        edges=edges,
+        last_run=last_run,
+    )
