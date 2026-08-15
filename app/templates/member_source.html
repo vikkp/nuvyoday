@@ -27,6 +27,17 @@
         {{ member.fetched_at.strftime('%Y-%m-%d %H:%M UTC') if member.fetched_at else '' }}
         {% if member.content_hash %}<br><code class="small">{{ member.content_hash[:12] }}…</code>{% endif %}
       </div>
+      <div class="mt-2 d-flex gap-1 justify-content-end">
+        <form action="{{ url_for('main.analyze_member_route', conn_id=connection.id, library=library, source_file=source_file, member=member.member) }}" method="post">
+          <button type="submit" class="btn btn-sm btn-primary">
+            <i class="bi bi-diagram-3"></i> Analyze
+          </button>
+        </form>
+        <a href="{{ url_for('main.member_dependencies', conn_id=connection.id, library=library, source_file=source_file, member=member.member) }}"
+           class="btn btn-sm btn-outline-secondary">
+          Dependencies
+        </a>
+      </div>
     {% else %}
       <span class="badge bg-secondary">Not harvested</span>
     {% endif %}
