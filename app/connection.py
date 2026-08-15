@@ -51,7 +51,7 @@ def decrypt_password(token: str) -> str:
     try:
         return f.decrypt(token.encode("utf-8")).decode("utf-8")
     except InvalidToken:
-        raise ValueError("Unable to decrypt password – SECRET_KEY may have changed")
+        raise ValueError("Unable to decrypt password \u2013 SECRET_KEY may have changed")
 
 
 def ensure_jvm(jar_path: Optional[str] = None) -> None:
@@ -77,13 +77,11 @@ def ensure_jvm(jar_path: Optional[str] = None) -> None:
                 "and place it in the lib/ folder."
             )
 
-        # Prefer JAVA_HOME if set
         jvmpath = None
         java_home = os.environ.get("JAVA_HOME")
         if java_home:
             candidate = Path(java_home) / "lib" / "server" / "libjvm.so"
             if not candidate.exists():
-                # Windows / macOS variants
                 for p in [
                     Path(java_home) / "bin" / "server" / "jvm.dll",
                     Path(java_home) / "lib" / "server" / "libjvm.dylib",
@@ -100,7 +98,6 @@ def ensure_jvm(jar_path: Optional[str] = None) -> None:
         if jvmpath:
             jpype.startJVM(jvmpath, *args, convertStrings=True)
         else:
-            # Let JPype find the JVM automatically
             jpype.startJVM(*args, convertStrings=True)
 
         _jvm_started = True
@@ -128,16 +125,12 @@ class IBMiConnection:
         ensure_jvm()
         jpype = _get_jpype()
 
-        # Import Java classes after JVM is up
         from com.ibm.as400.access import AS400  # type: ignore
 
         self._system = AS400(self.host, self.username, self.password)
         if self.use_ssl:
-            # For SSL you typically also set system properties or use a different port
-            # This is a simplified flag; production code may need more SSL config
             pass
 
-        # Force a connection attempt
         self._system.connectService(AS400.COMMAND)
 
     def disconnect(self) -> None:
@@ -159,13 +152,9 @@ class IBMiConnection:
             from com.ibm.as400.access import CommandCall  # type: ignore
 
             cmd = CommandCall(self._system)
-            # Harmless system value retrieval – proves we have authority & connectivity
             success = cmd.run("DSPSYSVAL SYSVAL(QMODEL) OUTPUT(*PRINT)")
-            # Even if the command has issues with OUTPUT, the connection itself worked
-            # if we got this far without exception.
             msg = "Connection successful"
             if not success:
-                # Collect any messages
                 messages = cmd.getMessageList()
                 if messages:
                     msg = f"Connected, but command returned: {messages[0].getText()}"
@@ -180,11 +169,137 @@ class IBMiConnection:
 
     def get_system_info(self) -> dict:
         """Return basic system information (future expansion)."""
-        # Placeholder – can be expanded with SystemValue, Job, etc.
         return {
             "host": self.host,
             "username": self.username,
         }
+
+    # ------------------------------------------------------------------
+    # Inventory helpers (ADR0002)
+    # ------------------------------------------------------------------
+
+    def list_libraries(self, preferred: list[str] | None = None) -> list[dict]:
+        """
+        Return a list of libraries visible to the connection user.
+        If preferred is provided, only those libraries are returned (if they exist).
+        """
+        self.connect()
+        try:
+            from com.ibm.as400.access import ObjectList  # type: ignore
+
+            results = []
+            if preferred:
+                for lib_name in preferred:
+                    lib_name = lib_name.strip().upper()
+                    if not lib_name:
+                        continue
+                    try:
+                        ol = ObjectList(self._system, lib_name, "*LIB", "*ALL")
+                        ol.load()
+                        results.append({
+                            "name": lib_name,
+                            "text_description": "",
+                        })
+                    except Exception:
+                        continue
+            else:
+                ol = ObjectList(self._system, "QSYS", "*LIB", "*ALL")
+                ol.load()
+                count = 0
+                while ol.next() and count < 200:
+                    obj = ol.getObject()
+                    name = str(obj.getName()).strip().upper()
+                    if name.startswith("Q") and name not in ("QGPL", "QTEMP"):
+                        continue
+                    results.append({
+                        "name": name,
+                        "text_description": str(obj.getTextDescription() or ""),
+                    })
+                    count += 1
+            return results
+        finally:
+            self.disconnect()
+
+    def list_source_files(self, library: str) -> list[dict]:
+        """List source physical files (*FILE with attribute PF-SRC) in a library."""
+        self.connect()
+        try:
+            from com.ibm.as400.access import ObjectList  # type: ignore
+
+            library = library.strip().upper()
+            results = []
+            ol = ObjectList(self._system, library, "*FILE", "*ALL")
+            ol.load()
+            while ol.next():
+                obj = ol.getObject()
+                name = str(obj.getName()).strip().upper()
+                if name.endswith("SRC") or name in (
+                    "QCLSRC", "QRPGSRC", "QDDSSRC", "QPNLSRC", "QCBLSRC"
+                ):
+                    results.append({
+                        "name": name,
+                        "text_description": str(obj.getTextDescription() or ""),
+                    })
+            return results
+        finally:
+            self.disconnect()
+
+    def list_members(self, library: str, source_file: str) -> list[dict]:
+        """List members of a source physical file."""
+        self.connect()
+        try:
+            from com.ibm.as400.access import MemberList  # type: ignore
+
+            library = library.strip().upper()
+            source_file = source_file.strip().upper()
+            results = []
+
+            ml = MemberList(self._system, library, source_file)
+            ml.load()
+            while ml.next():
+                mbr = ml.getMember()
+                name = str(mbr.getName()).strip().upper()
+                src_type = str(mbr.getSourceType() or "").strip().upper()
+                text = str(mbr.getTextDescription() or "")
+                results.append({
+                    "member": name,
+                    "source_type": src_type,
+                    "text_description": text,
+                    "last_changed": None,
+                })
+            return results
+        finally:
+            self.disconnect()
+
+    def get_member_source(self, library: str, source_file: str, member: str) -> str:
+        """
+        Retrieve the source text of a single member.
+        Returns the source as a single string (lines joined by newlines).
+        """
+        self.connect()
+        try:
+            from com.ibm.as400.access import SequentialFile, QSYSObjectPathName  # type: ignore
+
+            library = library.strip().upper()
+            source_file = source_file.strip().upper()
+            member = member.strip().upper()
+
+            path = QSYSObjectPathName(library, source_file, member, "MBR")
+            sf = SequentialFile(self._system, path.getPath())
+            sf.setReadNoWrite()
+            sf.open()
+            try:
+                lines = []
+                record = sf.readNext()
+                while record is not None:
+                    text = str(record).rstrip()
+                    lines.append(text)
+                    record = sf.readNext()
+                return "\n".join(lines)
+            finally:
+                sf.close()
+        finally:
+            self.disconnect()
 
     def __enter__(self):
         self.connect()
