@@ -364,3 +364,27 @@ def harvest_member(conn_id, library, source_file, member):
         "main.inventory_members",
         conn_id=conn.id, library=library, source_file=source_file
     ))
+
+
+@bp.route("/inventory/<int:conn_id>/library/<library>/<source_file>/<member>")
+def view_member_source(conn_id, library, source_file, member):
+    """View harvested source content for a member."""
+    conn = Connection.query.get_or_404(conn_id)
+    library = library.upper()
+    source_file = source_file.upper()
+    member = member.upper()
+
+    mbr = SourceMember.query.filter_by(
+        connection_id=conn.id,
+        library=library,
+        source_file=source_file,
+        member=member,
+    ).first_or_404()
+
+    return render_template(
+        "member_source.html",
+        connection=conn,
+        library=library,
+        source_file=source_file,
+        member=mbr,
+    )
