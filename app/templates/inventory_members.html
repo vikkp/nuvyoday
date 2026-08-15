@@ -28,50 +28,66 @@
   No members discovered yet. Click the button above to list members in this source file.
 </div>
 {% else %}
-<div class="table-responsive shadow-sm rounded">
-  <table class="table table-hover align-middle mb-0 bg-white">
-    <thead class="table-light">
-      <tr>
-        <th>Member</th>
-        <th>Type</th>
-        <th>Description</th>
-        <th>Harvested</th>
-        <th class="text-end">Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for m in members %}
-      <tr>
-        <td><strong>{{ m.member }}</strong></td>
-        <td><code>{{ m.source_type or '—' }}</code></td>
-        <td class="text-muted small">{{ m.text_description or '—' }}</td>
-        <td>
-          {% if m.is_harvested %}
-            <span class="badge bg-success">Yes</span>
-            <small class="text-muted d-block">{{ m.fetched_at.strftime('%Y-%m-%d %H:%M') if m.fetched_at else '' }}</small>
-          {% else %}
-            <span class="badge bg-secondary">No</span>
-          {% endif %}
-        </td>
-        <td class="text-end text-nowrap">
-          {% if m.is_harvested %}
-          <a href="{{ url_for('main.view_member_source', conn_id=connection.id, library=library, source_file=source_file, member=m.member) }}"
-             class="btn btn-sm btn-outline-secondary" title="View source">
-            <i class="bi bi-code-slash"></i> View
-          </a>
-          {% endif %}
-          <form action="{{ url_for('main.harvest_member', conn_id=connection.id, library=library, source_file=source_file, member=m.member) }}"
-                method="post" class="d-inline">
+<form action="{{ url_for('main.bulk_harvest', conn_id=connection.id, library=library, source_file=source_file) }}" method="post" id="bulk-form">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <div class="form-check">
+      <input class="form-check-input" type="checkbox" id="select-all" onclick="document.querySelectorAll('.mbr-check').forEach(c => c.checked = this.checked)">
+      <label class="form-check-label small text-muted" for="select-all">Select all</label>
+    </div>
+    <button type="submit" class="btn btn-sm btn-accent">
+      <i class="bi bi-download"></i> Harvest selected
+    </button>
+  </div>
+
+  <div class="table-responsive shadow-sm rounded">
+    <table class="table table-hover align-middle mb-0 bg-white">
+      <thead class="table-light">
+        <tr>
+          <th style="width:2rem"></th>
+          <th>Member</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Harvested</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in members %}
+        <tr>
+          <td>
+            <input class="form-check-input mbr-check" type="checkbox" name="members" value="{{ m.member }}">
+          </td>
+          <td><strong>{{ m.member }}</strong></td>
+          <td><code>{{ m.source_type or '—' }}</code></td>
+          <td class="text-muted small">{{ m.text_description or '—' }}</td>
+          <td>
+            {% if m.is_harvested %}
+              <span class="badge bg-success">Yes</span>
+              <small class="text-muted d-block">{{ m.fetched_at.strftime('%Y-%m-%d %H:%M') if m.fetched_at else '' }}</small>
+            {% else %}
+              <span class="badge bg-secondary">No</span>
+            {% endif %}
+          </td>
+          <td class="text-end text-nowrap">
+            {% if m.is_harvested %}
+            <a href="{{ url_for('main.view_member_source', conn_id=connection.id, library=library, source_file=source_file, member=m.member) }}"
+               class="btn btn-sm btn-outline-secondary" title="View source">
+              <i class="bi bi-code-slash"></i> View
+            </a>
+            {% endif %}
             <button type="submit" class="btn btn-sm btn-outline-primary"
+                    formaction="{{ url_for('main.harvest_member', conn_id=connection.id, library=library, source_file=source_file, member=m.member) }}"
+                    formmethod="post"
                     {% if m.is_harvested %}title="Re-harvest"{% endif %}>
               <i class="bi bi-download"></i> {% if m.is_harvested %}Re-harvest{% else %}Harvest{% endif %}
             </button>
-          </form>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="small text-muted mt-2 mb-0">Bulk harvest is limited to 50 members per request (synchronous MVP).</p>
+</form>
 {% endif %}
 {% endblock %}
