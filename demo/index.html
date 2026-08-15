@@ -33,7 +33,6 @@
     </div>
   </nav>
 
-  <!-- Demo banner -->
   <div class="bg-accent-soft border-bottom border-warning-subtle py-2">
     <div class="container text-center small">
       <i class="bi bi-info-circle me-1"></i>
@@ -52,11 +51,11 @@
           generate clean technical &amp; functional specifications, and finally
           move modernization projects forward.
         </p>
-        <a href="connections.html" class="btn btn-accent btn-lg me-2">
-          <i class="bi bi-hdd-network"></i> Manage Connections
+        <a href="https://github.com/vikkp/nuvyoday/archive/refs/heads/main.zip" class="btn btn-accent btn-lg me-2" download="nuvyoday-starter.zip">
+          <i class="bi bi-download"></i> Download Product (ZIP)
         </a>
-        <a href="connection-form.html" class="btn btn-outline-primary btn-lg">
-          <i class="bi bi-plus-lg"></i> Add IBM i System
+        <a href="connections.html" class="btn btn-outline-primary btn-lg me-2">
+          <i class="bi bi-hdd-network"></i> Preview UI
         </a>
       </div>
       <div class="col-lg-5 text-center d-none d-lg-block">
@@ -95,6 +94,33 @@
             <p class="card-text text-muted">
               Generate living technical and functional specifications that unblock migration and modernization work.
             </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-5 mt-5">
+      <div class="card-body p-4">
+        <div class="row align-items-center">
+          <div class="col-md-8">
+            <h3 class="h4 mb-2"><i class="bi bi-box-seam text-primary"></i> Run Nuvyoday on a machine that can reach IBM i</h3>
+            <p class="text-muted mb-2">
+              Download the starter package, install Python + Java, drop in <code>jt400.jar</code>,
+              and run on any computer on the same network as your IBM i (or via VPN).
+              Perfect for testing connectivity and inventory before packaging with iVistaar.
+            </p>
+            <ol class="small text-muted mb-0">
+              <li>Unzip → create venv → <code>pip install -r requirements.txt</code></li>
+              <li>Copy <code>.env.example</code> to <code>.env</code> and set a secret key</li>
+              <li>Download <code>jt400.jar</code> into <code>lib/</code></li>
+              <li>Run <code>python run.py</code> → open <code>http://127.0.0.1:5055</code></li>
+            </ol>
+          </div>
+          <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <a href="https://github.com/vikkp/nuvyoday/archive/refs/heads/main.zip" class="btn btn-primary btn-lg" download="nuvyoday-starter.zip">
+              <i class="bi bi-download"></i> Download ZIP
+            </a>
+            <div class="small text-muted mt-2">Latest from GitHub · includes SETUP.txt</div>
           </div>
         </div>
       </div>

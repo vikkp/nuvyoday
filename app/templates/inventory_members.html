@@ -53,7 +53,13 @@
             <span class="badge bg-secondary">No</span>
           {% endif %}
         </td>
-        <td class="text-end">
+        <td class="text-end text-nowrap">
+          {% if m.is_harvested %}
+          <a href="{{ url_for('main.view_member_source', conn_id=connection.id, library=library, source_file=source_file, member=m.member) }}"
+             class="btn btn-sm btn-outline-secondary" title="View source">
+            <i class="bi bi-code-slash"></i> View
+          </a>
+          {% endif %}
           <form action="{{ url_for('main.harvest_member', conn_id=connection.id, library=library, source_file=source_file, member=m.member) }}"
                 method="post" class="d-inline">
             <button type="submit" class="btn btn-sm btn-outline-primary"
