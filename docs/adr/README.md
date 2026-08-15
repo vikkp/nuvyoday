@@ -5,6 +5,7 @@ This folder contains the Architecture Decision Records for Nuvyoday.
 | ADR | Title | Status | Date |
 |-----|-------|--------|------|
 | [0001](0001-core-architecture-and-deployment-model.md) | Core Architecture and Deployment Model | Accepted | 2026-08-14 |
+| [0002](0002-source-inventory-and-harvesting.md) | Source Inventory and Harvesting Strategy | Accepted | 2026-08-14 |
 
 ## Format
 
