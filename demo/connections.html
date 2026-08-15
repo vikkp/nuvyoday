@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connections — Nuvyoday</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="css/style.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+    <div class="container">
+      <a class="navbar-brand fw-bold" href="index.html">
+        <i class="bi bi-sunrise-fill me-2"></i>Nuvyoday
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="nav">
+        <ul class="navbar-nav me-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="index.html">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link active" href="connections.html">Connections</a>
+          </li>
+        </ul>
+        <span class="navbar-text text-white-50 small">
+          A new sunrise for legacy IBM i
+        </span>
+      </div>
+    </div>
+  </nav>
+
+  <div class="bg-accent-soft border-bottom border-warning-subtle py-2">
+    <div class="container text-center small">
+      <i class="bi bi-info-circle me-1"></i>
+      <strong>Public UI Demo</strong> — Buttons are non-functional. Real version connects to live IBM i systems from your own network.
+    </div>
+  </div>
+
+  <main class="container my-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2 class="mb-0"><i class="bi bi-hdd-network"></i> IBM i Connections</h2>
+      <a href="connection-form.html" class="btn btn-primary">
+        <i class="bi bi-plus-lg"></i> Add Connection
+      </a>
+    </div>
+
+    <div class="table-responsive shadow-sm rounded">
+      <table class="table table-hover align-middle mb-0 bg-white">
+        <thead class="table-light">
+          <tr>
+            <th>Name</th>
+            <th>Host</th>
+            <th>User</th>
+            <th>Last Test</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <strong>Production IBM i</strong><br>
+              <small class="text-muted">Main production LPAR – critical financials</small>
+            </td>
+            <td>as400.prod.company.com</td>
+            <td>NUVYODAY</td>
+            <td>
+              <small class="text-muted">2026-08-14 18:42 UTC</small><br>
+              <span class="badge bg-success">OK</span>
+              <br><small class="text-muted">Connection successful</small>
+            </td>
+            <td class="text-end text-nowrap">
+              <button class="btn btn-sm btn-outline-success" disabled title="Demo only">
+                <i class="bi bi-play-circle"></i> Test
+              </button>
+              <a href="connection-form.html" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <button class="btn btn-sm btn-outline-danger" disabled>
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <strong>Seggu UAT</strong><br>
+              <small class="text-muted">Isolated network for upgrade testing</small>
+            </td>
+            <td>10.12.45.88</td>
+            <td>SEGGU_ADMIN</td>
+            <td>
+              <small class="text-muted">2026-08-14 17:15 UTC</small><br>
+              <span class="badge bg-success">OK</span>
+            </td>
+            <td class="text-end text-nowrap">
+              <button class="btn btn-sm btn-outline-success" disabled>
+                <i class="bi bi-play-circle"></i> Test
+              </button>
+              <a href="connection-form.html" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <button class="btn btn-sm btn-outline-danger" disabled>
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <strong>Francisco – Dynamics Migration</strong><br>
+              <small class="text-muted">Source system for MS Dynamics project</small>
+            </td>
+            <td>ibmi-dev.internal</td>
+            <td>FARCHITECT</td>
+            <td>
+              <small class="text-muted">2026-08-13 09:02 UTC</small><br>
+              <span class="badge bg-danger">Failed</span>
+              <br><small class="text-muted">Connection timed out</small>
+            </td>
+            <td class="text-end text-nowrap">
+              <button class="btn btn-sm btn-outline-success" disabled>
+                <i class="bi bi-play-circle"></i> Test
+              </button>
+              <a href="connection-form.html" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <button class="btn btn-sm btn-outline-danger" disabled>
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mt-4 p-3 bg-white rounded shadow-sm border">
+      <h6 class="text-muted mb-2"><i class="bi bi-info-circle"></i> Notes</h6>
+      <ul class="small text-muted mb-0">
+        <li>Passwords are encrypted at rest using Fernet (key derived from your FLASK_SECRET_KEY).</li>
+        <li>You need Java 8+ and <code>jt400.jar</code> (or JTOpen) in the <code>lib/</code> folder for the Test button to work.</li>
+        <li>Default non-SSL host server port is 8473. SSL usually uses 9473 or depends on your system configuration.</li>
+      </ul>
+    </div>
+  </main>
+
+  <footer class="text-center text-muted py-4 small">
+    Nuvyoday &mdash; Built for teams still fighting green screens<br>
+    <span class="text-muted">Demo only · Real product runs on-premises via iVistaar</span>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
